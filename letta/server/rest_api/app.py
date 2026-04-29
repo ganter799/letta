@@ -111,8 +111,15 @@ from letta.server.global_exception_handler import setup_global_exception_handler
 
 # NOTE(charles): these are extra routes that are not part of v1 but we still need to mount to pass tests
 from letta.server.rest_api.auth.index import setup_auth_router  # TODO: probably remove right?
+from letta.server.rest_api.auth.protected_resource import router as protected_resource_router
 from letta.server.rest_api.interface import StreamingServerInterface
-from letta.server.rest_api.middleware import CheckPasswordMiddleware, LoggingMiddleware, RequestIdMiddleware
+from letta.server.rest_api.middleware import (
+    CheckPasswordMiddleware,
+    LoggingMiddleware,
+    OAuthResourceMiddleware,
+    RequestIdMiddleware,
+    build_oauth_middleware_kwargs,
+)
 from letta.server.rest_api.routers.v1 import ROUTERS as v1_routes
 from letta.server.rest_api.routers.v1.organizations import router as organizations_router
 from letta.server.rest_api.routers.v1.users import router as users_router  # TODO: decide on admin
@@ -794,7 +801,11 @@ def create_application() -> "FastAPI":
 
     settings.cors_origins.append("https://app.letta.com")
 
-    if (os.getenv("LETTA_SERVER_SECURE") == "true") or "--secure" in sys.argv:
+    oauth_kwargs = build_oauth_middleware_kwargs()
+    if oauth_kwargs is not None:
+        print(f"▶ Using OAuth resource mode (issuer: {oauth_kwargs['issuer']})")
+        app.add_middleware(OAuthResourceMiddleware, **oauth_kwargs)
+    elif (os.getenv("LETTA_SERVER_SECURE") == "true") or "--secure" in sys.argv:
         print(f"▶ Using secure mode with password: {random_password}")
         app.add_middleware(CheckPasswordMiddleware, password=random_password)
 
@@ -862,6 +873,9 @@ def create_application() -> "FastAPI":
 
     # /api/auth endpoints
     app.include_router(setup_auth_router(server, interface, random_password), prefix=API_PREFIX)
+
+    # RFC 9728 protected resource metadata for OAuth discovery
+    app.include_router(protected_resource_router)
 
     # / static files
     mount_static_files(app)
