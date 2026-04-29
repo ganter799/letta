@@ -61,6 +61,12 @@ services:
     restart: unless-stopped
     cap_drop:
       - ALL
+    cap_add:
+      - CHOWN          # entrypoint chowns /data on volume init
+      - SETUID         # gosu drops to MEMFS_UID
+      - SETGID         # gosu drops to MEMFS_GID
+      - DAC_OVERRIDE   # traverse pre-existing files owned by other UIDs during chown
+      - FOWNER         # adjust permissions on files we don't own yet
     networks:
       letta_backend_net:
         ipv4_address: 172.20.0.100
