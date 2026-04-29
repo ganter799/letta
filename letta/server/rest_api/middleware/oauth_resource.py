@@ -1,4 +1,6 @@
 import asyncio
+import base64
+import binascii
 import os
 import time
 from typing import Iterable, Optional, Sequence
@@ -138,12 +140,34 @@ class OAuthResourceMiddleware(BaseHTTPMiddleware):
 
     @staticmethod
     def _extract_bearer(header_value: Optional[str]) -> Optional[str]:
+        """Pull a JWT out of the Authorization header.
+
+        Accepts both `Bearer <token>` and `Basic base64(user:token)`. The Basic
+        form is what git-over-HTTP uses (the username is a placeholder; the
+        password carries the token), so this lets the same middleware gate
+        REST + git transport without forcing clients to invent custom auth.
+        """
         if not header_value:
             return None
         parts = header_value.split(None, 1)
-        if len(parts) != 2 or parts[0].lower() != "bearer":
+        if len(parts) != 2:
             return None
-        return parts[1].strip() or None
+        scheme, value = parts[0].lower(), parts[1].strip()
+        if scheme == "bearer":
+            return value or None
+        if scheme == "basic":
+            try:
+                decoded = base64.b64decode(
+                    value + "=" * (-len(value) % 4),
+                    validate=False,
+                ).decode("utf-8", errors="replace")
+            except (binascii.Error, ValueError):
+                return None
+            if ":" not in decoded:
+                return None
+            _, _, token = decoded.partition(":")
+            return token.strip() or None
+        return None
 
     def _claims_options(self) -> dict:
         issuer_no_slash = self._issuer.rstrip("/")
