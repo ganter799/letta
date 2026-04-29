@@ -142,4 +142,5 @@ side.
 | `MEMFS_BIND`          | `0.0.0.0`               | Bind address; keep `0.0.0.0` for sidecar use   |
 | `MEMFS_BASE`          | `/data`                 | Root for `<org>/<agent>/repo.git/` layout      |
 | `MEMFS_DEFAULT_ORG`   | `default-org`           | Used when no `X-Organization-Id` header sent   |
+| `MEMFS_INITIAL_BRANCH`| `main`                  | `git init --bare --initial-branch=$THIS` for fresh repos; matches letta-api's default |
 | `MEMFS_UID` / `_GID`  | `1000` / `1000`         | Read by `entrypoint.sh` for the chown + gosu   |
