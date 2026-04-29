@@ -18,6 +18,7 @@ RUN chmod 0555 /usr/local/bin/git-memfs-server.py /usr/local/bin/entrypoint.sh
 ENV MEMFS_BASE=/data \
     MEMFS_PORT=8285 \
     MEMFS_BIND=0.0.0.0 \
+    MEMFS_INITIAL_BRANCH=main \
     MEMFS_UID=${MEMFS_UID} \
     MEMFS_GID=${MEMFS_GID}
 

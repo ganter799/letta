@@ -23,12 +23,18 @@ Then set in ~/.letta/conf.yaml:
 ------------------------------------------------------------------------------
 Vendored from Corykidios/local_letta_memfs_magic at commit
 3175e1fa1447cb345223a69c39b2f6dc351ceee8 with the following local patches:
-  - PORT, MEMFS_BASE, DEFAULT_ORG, and bind address are all env-driven
-    (MEMFS_PORT, MEMFS_BASE, MEMFS_DEFAULT_ORG, MEMFS_BIND).
+  - PORT, MEMFS_BASE, DEFAULT_ORG, INITIAL_BRANCH, and bind address are
+    all env-driven (MEMFS_PORT, MEMFS_BASE, MEMFS_DEFAULT_ORG,
+    MEMFS_INITIAL_BRANCH, MEMFS_BIND).
   - Default bind address changed from 127.0.0.1 to 0.0.0.0 so the server
     can be reached by sibling containers in a sidecar deployment.
   - SIGTERM is handled cleanly so `docker stop` shuts the server down
     immediately instead of waiting for the grace-period SIGKILL.
+  - `git init --bare` is invoked with `--initial-branch=$INITIAL_BRANCH`
+    (default "main") so the bare repo's HEAD matches what letta-api
+    writes; without this, git's per-version default differs (older git
+    uses master, modern git uses main, depending on init.defaultBranch),
+    leading to a branch-name mismatch at clone time.
 
 These patches are intended to be upstreamable.
 ------------------------------------------------------------------------------
@@ -51,6 +57,7 @@ MEMFS_BASE = Path(
     )
 )
 DEFAULT_ORG = os.environ.get("MEMFS_DEFAULT_ORG", "default-org")
+INITIAL_BRANCH = os.environ.get("MEMFS_INITIAL_BRANCH", "main")
 
 
 def find_or_create_repo(agent_id: str, org_id: str) -> Path:
@@ -66,12 +73,15 @@ def find_or_create_repo(agent_id: str, org_id: str) -> Path:
                     return candidate
         # Create fresh bare repo
         repo.mkdir(parents=True, exist_ok=True)
-        subprocess.run(["git", "init", "--bare", str(repo)], check=True, capture_output=True)
+        subprocess.run(
+            ["git", "init", "--bare", f"--initial-branch={INITIAL_BRANCH}", str(repo)],
+            check=True, capture_output=True,
+        )
         subprocess.run(
             ["git", "-C", str(repo), "config", "http.receivepack", "true"],
             check=True, capture_output=True,
         )
-        print(f"[git-memfs] Created bare repo at {repo}", flush=True)
+        print(f"[git-memfs] Created bare repo at {repo} (HEAD={INITIAL_BRANCH})", flush=True)
     return repo
 
 
