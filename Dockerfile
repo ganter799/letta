@@ -57,7 +57,7 @@ RUN set -eux; \
     esac; \
     apt-get update && \
     # Install curl, Python, and PostgreSQL client libraries
-    apt-get install -y curl python3 python3-venv libpq-dev && \
+    apt-get install -y curl python3 python3-venv libpq-dev git && \
     # Install Node.js
     curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION}.x | bash - && \
     apt-get install -y nodejs && \
