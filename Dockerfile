@@ -42,7 +42,7 @@ RUN uv sync --frozen --no-dev --all-extras --python 3.11
 FROM pgvector/pgvector:0.8.1-pg15 AS runtime
 
 # Overridable Node.js version with --build-arg NODE_VERSION
-ARG NODE_VERSION=22
+ARG NODE_VERSION=25
 
 # Allow overriding the OpenTelemetry Collector version and let Docker inject TARGETARCH during build
 ARG OTEL_VERSION=0.96.0
@@ -57,7 +57,7 @@ RUN set -eux; \
     esac; \
     apt-get update && \
     # Install curl, Python, and PostgreSQL client libraries
-    apt-get install -y curl python3 python3-venv libpq-dev redis-server && \
+    apt-get install -y curl python3 python3-venv libpq-dev && \
     # Install Node.js
     curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION}.x | bash - && \
     apt-get install -y nodejs && \

@@ -140,7 +140,8 @@ Temporary Items
 **/nbproject/private/
 **/nbproject/Makefile-*.mk
 **/nbproject/Package-*.bash
-build/
+build/*
+!build/memfs/
 nbbuild/
 dist/
 nbdist/
