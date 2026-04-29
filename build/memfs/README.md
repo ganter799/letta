@@ -46,10 +46,16 @@ then remove the old `git:` service:
 services:
   letta-api:
     # In letta.env: LETTA_MEMFS_SERVICE_URL=http://memfs:8285
-    # The letta-memfs volume is no longer mounted here — only memfs needs it.
+    # IMPORTANT: letta-api writes commits to /root/.letta/memfs/repository
+    # via its filesystem-backed storage backend. Mount the same letta-memfs
+    # volume here as well so the sidecar (which reads from /data) can serve
+    # what letta-api writes. Without this mount, letta-api's commits never
+    # reach the sidecar and `git pull` from clients sees an empty bare repo.
     networks:
       letta_backend_net:
         ipv4_address: 172.20.0.98
+    volumes:
+      - letta-memfs:/root/.letta/memfs/repository
     # … rest of your existing letta-api service unchanged …
 
   memfs:
@@ -103,6 +109,30 @@ Also remove the in-container memfs lines from `letta/server/startup.sh`
 (the `exec ./git-server.py … &` line) and the `ADD …git-server.py` and
 `git` apt-package lines from the main `Dockerfile`. The current branch
 already contains both of those reverts.
+
+## Why both containers mount the same volume
+
+Letta-api's `block_manager_git` / `git_operations` writes block commits
+to a *filesystem* path (`/root/.letta/memfs/repository/<org>/<agent>/repo.git/`)
+via its `LocalStorageBackend` — it does NOT push to the sidecar over
+HTTP. The `LETTA_MEMFS_SERVICE_URL` env var only routes the `/v1/git/`
+*proxy* on letta-api (i.e. inbound git transport from clients). So the
+two containers must share the same physical storage:
+
+  - letta-api writes to `/root/.letta/memfs/repository/...`
+  - memfs sidecar reads from `/data/...` (set via `MEMFS_BASE`)
+
+Both paths back the same `letta-memfs` volume; the inner repo layout is
+identical regardless of mount point. Letta-api runs as root (default
+mode 644 / dirs 755) and the sidecar reads as UID 1000 — works in
+practice because the default umask leaves files world-readable.
+
+If you ever see "Backfilled git repo with N blocks" in letta-api logs
+but `/memfs sync` still fails on the client with "no such ref was
+fetched", check `docker exec letta-memfs ls /data` against
+`docker exec letta-api ls /root/.letta/memfs/repository` — they should
+return identical contents. Different = volume mount is missing on one
+side.
 
 ## Configuration reference
 
