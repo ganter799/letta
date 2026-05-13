@@ -19,6 +19,7 @@ from letta.orm.identities_agents import IdentitiesAgents as IdentitiesAgents
 from letta.orm.identities_blocks import IdentitiesBlocks as IdentitiesBlocks
 from letta.orm.identity import Identity as Identity
 from letta.orm.job import Job as Job
+from letta.orm.oauth_identity import OAuthIdentity as OAuthIdentity
 from letta.orm.llm_batch_items import LLMBatchItem as LLMBatchItem
 from letta.orm.llm_batch_job import LLMBatchJob as LLMBatchJob
 from letta.orm.mcp_oauth import MCPOAuth as MCPOAuth
