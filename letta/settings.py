@@ -468,6 +468,31 @@ class Settings(BaseSettings):
         description="When true, prevents fallback to default actor in get_actor_or_default_async. Raises NoResultFound if actor_id is None.",
     )
 
+    # OIDC / OAuth user provisioning
+    oauth_org_claim: Optional[str] = Field(
+        default=None,
+        description="JWT claim name used to resolve the org for a new user (e.g. 'groups', 'org', 'tenant').",
+    )
+    oauth_org_map_json: Optional[str] = Field(
+        default=None,
+        description='JSON object mapping claim values to existing org IDs, e.g. \'{"eng": "org-xxx", "ops": "org-yyy"}\'.',
+    )
+    oauth_org_autocreate: bool = Field(
+        default=False,
+        description=(
+            "When true and a JWT claim value has no entry in oauth_org_map_json, "
+            "automatically create a new organization named after the claim value."
+        ),
+    )
+    oauth_org_reassign: bool = Field(
+        default=False,
+        description=(
+            "When true, re-assign an existing user's organization_id on each login "
+            "if the org resolved from JWT claims differs from what is stored. "
+            "Default off — existing provisioning behaviour is unchanged when unset."
+        ),
+    )
+
     @property
     def letta_pg_uri(self) -> str:
         if self.pg_uri:
